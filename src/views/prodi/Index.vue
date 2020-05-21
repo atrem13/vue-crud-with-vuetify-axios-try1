@@ -3,13 +3,13 @@
     <v-data-table
       :headers="headers"
       :items="prodis"
-      sort-by="nama"
+      :sort-by.sync="nama"
       class="elevation-1"
       :search="search"
     >
       <template v-slot:top>
         <v-toolbar flat color="white">
-          <v-toolbar-title>My CRUD</v-toolbar-title>
+          <v-toolbar-title>Prodi</v-toolbar-title>
           <v-divider
             class="mx-4"
             inset
@@ -91,6 +91,7 @@ export default {
   },
   data(){
     return{
+      nama:'nama',
       search:'',
       prodis:[],
       dialog: false,
@@ -99,7 +100,7 @@ export default {
         { text:'Akreditas', value:'akreditas'},
         { text:'Aksi', value:'aksi'}
       ],
-      editedIndex: 0,
+      editedIndex: -1,
       editedItem: {
         nama: '',
         akreditas:''
@@ -112,7 +113,7 @@ export default {
   },
   computed:{
     formTitle(){
-      return this.editedIndex == 0 ? 'New Item' : 'Edit Item'
+      return this.editedIndex == -1 ? 'New Item' : 'Edit Item';
     },
   },
   watch: {
@@ -125,17 +126,17 @@ export default {
       this.dialog = false;
       this.$nextTick(() => {
         this.editedItem = Object.assign({}, this.defaultItem);
-        this.editedIndex = 0;
+        this.editedIndex = -1;
       });
     },
     
     save () {
-        if (this.editedIndex == 1) {
-          let uri = `http://localhost/prodi/${this.editedItem.id}`;
+        if (this.editedIndex > -1) {
+          let uri = `http://localhost:3000/prodi/${this.editedItem.id}`;
           this.axios.put(uri, this.editedItem)
             .then((res) => {
-              if(res.data.data){
-                Object.assign(this.prodis[this.editedIndex], this.editedItem)
+              if(res.data.data[0]){
+                Object.assign(this.prodis[this.editedIndex], this.editedItem);
               }else{
                 console.log('error');
               }
@@ -157,7 +158,7 @@ export default {
 
     editItem (item) {
       // console.log(item);
-      this.editedIndex = 1;
+      // this.editedIndex = 1;
       this.editedIndex = this.prodis.indexOf(item);
       this.editedItem = Object.assign({}, item);
       // console.log(this.editedItem);
