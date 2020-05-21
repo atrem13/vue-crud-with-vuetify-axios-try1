@@ -28,28 +28,43 @@
               <v-btn color="primary" dark class="mb-2" v-on="on">New Item</v-btn>
             </template>
             <v-card>
-              <v-card-title>
-                <span class="headline">{{ formTitle }}</span>
-              </v-card-title>
+              <v-form
+                ref="form"
+                v-model="formValidation"
+                lazy-validation
+              >
+                <v-card-title>
+                  <span class="headline">{{ formTitle }}</span>
+                </v-card-title>
 
-              <v-card-text>
-                <v-container>
-                  <v-row>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.nama" label="Nama Prodi"></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.akreditas" label="Akreditas Prodi"></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
+                <v-card-text>
+                  <v-container>
+                    <v-row>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-text-field
+                          v-model="editedItem.nama" 
+                          label="Nama Prodi"
+                          :rules="inputRules.nama"
+                          required
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-text-field 
+                          v-model="editedItem.akreditas" 
+                          label="Akreditas Prodi"
+                          :rules="inputRules.akreditas"
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+                  </v-container>
+                </v-card-text>
 
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="close()">Cancel</v-btn>
-                <v-btn color="blue darken-1" text @click="save()">Save</v-btn>
-              </v-card-actions>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="blue darken-1" text @click="close()">Cancel</v-btn>
+                  <v-btn color="blue darken-1" :disabled="!formValidation" text @click="save()">Save</v-btn>
+                </v-card-actions>
+              </v-form>
 
             </v-card>
           </v-dialog>
@@ -91,6 +106,17 @@ export default {
   },
   data(){
     return{
+      formValidation:true,
+      inputRules:{
+        nama:[
+          v => !!v || 'nama is required'
+        ],
+        akreditas: [
+          v => !!v || 'akreditas is required' ,
+          v => v.match("[a-zA-Z]") || 'akreditas berupa huruf',
+          v => v.length == 1 || 'akreditas berupa satu huruf'
+        ] 
+      },
       nama:'nama',
       search:'',
       prodis:[],
@@ -123,6 +149,7 @@ export default {
   },
   methods:{
     close() {
+      this.$refs.form.resetValidation();
       this.dialog = false;
       this.$nextTick(() => {
         this.editedItem = Object.assign({}, this.defaultItem);
@@ -137,6 +164,7 @@ export default {
             .then((res) => {
               if(res.data.data[0]){
                 Object.assign(this.prodis[this.editedIndex], this.editedItem);
+                this.close()
               }else{
                 console.log('error');
               }
@@ -149,11 +177,11 @@ export default {
             .then((res) => {
               console.log(res);
               this.prodis.push(res.data.data);
+              this.close()
             }).catch((err) => {
               console.log(err);
             });
         }
-        this.close()
     },
 
     editItem (item) {

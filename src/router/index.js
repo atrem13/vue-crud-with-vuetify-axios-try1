@@ -18,7 +18,7 @@ Vue.use(VueRouter)
     component:MahasiswaIndex
   },
   {
-    path:'/prodi',
+    path:'/ruang',
     name:'ruang.index',
     component:RuangIndex
   }

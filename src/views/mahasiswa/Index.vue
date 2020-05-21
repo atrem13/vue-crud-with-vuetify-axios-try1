@@ -29,27 +29,42 @@
               <v-btn color="primary" dark class="mb-2" v-on="on">New Item</v-btn>
             </template>
             <v-card>
-              <v-card-title>
-                <span class="headline">{{formTitle}}</span>
-              </v-card-title>
-              <v-card-text>
-                <v-container>
-                  <v-row>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.nama" label="Nama Manahsiswa">
-                      </v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field v-model="editedItem.angkatan" label="Angkatan"></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="close()">Cancel</v-btn>
-                <v-btn color="blue darken-1" text @click="save()">Save</v-btn>
-              </v-card-actions>
+              <v-form
+                ref="form"
+                v-model="formValidation"
+                lazy-validation
+              >
+                <v-card-title>
+                  <span class="headline">{{formTitle}}</span>
+                </v-card-title>
+                <v-card-text>
+                  <v-container>
+                    <v-row>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-text-field 
+                          v-model="editedItem.nama" 
+                          label="Nama Mahasiswa"
+                          required
+                          :rules="inputRules.nama"
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="4">
+                        <v-text-field 
+                          v-model="editedItem.angkatan" 
+                          label="Angkatan"
+                          required
+                          :rules="inputRules.angkatan"
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+                  </v-container>
+                </v-card-text>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="blue darken-1" text @click="close()">Cancel</v-btn>
+                  <v-btn color="blue darken-1" :disabled="!formValidation" text @click="save()">Save</v-btn>
+                </v-card-actions>
+              </v-form>
             </v-card>
           </v-dialog>
         </v-toolbar>
@@ -100,9 +115,10 @@ export default {
       headers:[
         { text:'Nama', value:'nama' },
         { text:'Angkatan', value:'angkatan' },
+        { text:'Prodi', value:'prodi.nama' },
         { text:'Aksi', value:'aksi' }
       ],
-      editedIndex: 0,
+      editedIndex: -1,
       editedItem: {
         nama:'',
         angkatan:''
@@ -110,30 +126,49 @@ export default {
       defaultItem: {
         nama:'',
         angkatan:''
+      },
+      formValidation:true,
+      inputRules:{
+        nama:[
+          v => !!v || 'Nama is required',
+        ],
+        angkatan:[
+          v => !!v || 'Angkatan is required',
+          v => !isNaN(v) || 'Angkatan write in number'
+        ]
       } 
     }
   },
   computed:{
     formTitle(){
-      return this.editedIndex == 0 ? 'New Item' : 'Edit Item'
+      return this.editedIndex == -1 ? 'New Item' : 'Edit Item'
     }
   },
   watch:{
-    dialog(val){
-      val||this.close();
+    dialog(on){
+      on||this.close();
     }
   },
   methods:{
+    // // form validation
+    // validate(){
+    //     this.$refs.form.validate()
+    // },
+    // close modal
     close(){
+      this.$refs.form.resetValidation();
       this.dialog = false;
       this.$nextTick(() => {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
     },
+    // save/update item
     save(){
-      if(this.editedIndex > -1){
+      if(this.editedIndex != -1){
         let uri = `http://localhost:3000/mahasiswa/${this.editedItem.id}`;
+        // console.log(uri);
+        // console.log(this.editedIndex);
         this.axios.put(uri, this.editedItem)
           .then((res) => {
             if(res.data.data[0]){
@@ -143,22 +178,27 @@ export default {
               alert('error');
             }
           }).catch((err) => {
-            console.log(err[0]);
+            alert(err);
           });
       }else{
-        let uri = 'http://localhost:3000/mahasiswa';
+        let uri = 'http://localhost:3000/mahasiswa/';
+        // console.log(uri);
+        // console.log(this.editedIndex);
         this.axios.post(uri, this.editedItem)
           .then((res) =>{
             if(res){
               this.mahasiswas.push(res.data.data);
+              this.close();
             }else{
               alert('error');
             }
           }).catch((err) => {
             console.log(err);
+            alert(err);
           });
       }
     },
+    // get data from selected item and display it on modal
     editItem(item){
       this.editedIndex = this.mahasiswas.indexOf(item);
       this.editedItem = Object.assign({}, item);
@@ -168,6 +208,7 @@ export default {
       // console.log(this.editedItem);
       this.dialog = true;
     },
+    // delete item
     deleteItem(item){
       let del = confirm('are you sure want to delete this item?');
       if(del){
